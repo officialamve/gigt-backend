@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth.middleware");
-const { earnCoins, spendCoins, getTransactions } = require("../controllers/coin.controller");
+const controller = require("../controllers/coins.controller");
 
-router.post("/earn", auth, earnCoins);
-router.post("/spend", auth, spendCoins);
-router.get("/history", auth, getTransactions);
+router.post("/earn", auth, controller.earnCoins);
+router.post("/spend", auth, controller.spendCoins);
+router.get("/tx", auth, controller.getTransactions);
 
 module.exports = router;
