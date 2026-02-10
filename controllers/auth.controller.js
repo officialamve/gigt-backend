@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+/* ---------- REGISTER ---------- */
 exports.register = async (req, res) => {
   try {
     let { email, password, username } = req.body;
@@ -15,17 +16,20 @@ exports.register = async (req, res) => {
       username = email.split("@")[0];
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    });
+
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
+    await User.create({
       email,
       username,
-      password: hashed,
+      password: hashedPassword,
       coins: 0
     });
 
@@ -36,8 +40,11 @@ exports.register = async (req, res) => {
   }
 };
 
+/* ---------- LOGIN (EMAIL OR USERNAME) ---------- */
 exports.login = async (req, res) => {
-  const { identifier, password } = req.body;
+  // support both "identifier" and "email"
+  const identifier = req.body.identifier || req.body.email;
+  const { password } = req.body;
 
   if (!identifier || !password) {
     return res.status(400).json({ message: "Missing fields" });
@@ -45,18 +52,17 @@ exports.login = async (req, res) => {
 
   try {
     const user = await User.findOne({
-      $or: [
-        { email: identifier },
-        { username: identifier }
-      ]
+      $or: [{ email: identifier }, { username: identifier }]
     });
 
-    if (!user)
+    if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
+    if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     const token = jwt.sign(
       { id: user._id },
@@ -66,6 +72,7 @@ exports.login = async (req, res) => {
 
     res.json({ token });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
