@@ -4,10 +4,15 @@ const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
   try {
-    const { email, password, username } = req.body;
+    let { email, password, username } = req.body;
 
-    if (!email || !password || !username) {
+    if (!email || !password) {
       return res.status(400).json({ message: "Missing fields" });
+    }
+
+    // auto-generate username if not provided
+    if (!username) {
+      username = email.split("@")[0];
     }
 
     const existingUser = await User.findOne({ email });
