@@ -31,17 +31,24 @@ router.get("/:username", async (req, res) => {
   try {
     const user = await User.findOne({
       username: req.params.username
-    })
-      .select("-password")
-      .populate("posts")
-      .populate("owned")
-      .populate("gifts");
+    }).select("-password -email");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json(user);
+    res.json({
+      username: user.username,
+      coins: user.coins,
+      isCreator: user.isCreator,
+      creatorProfile: user.isCreator ? {
+        displayName: user.creatorProfile?.displayName,
+        category: user.creatorProfile?.category,
+        bio: user.creatorProfile?.bio,
+        verified: user.creatorProfile?.verified
+      } : null,
+      createdAt: user.createdAt
+    });
 
   } catch (err) {
     console.error(err);
