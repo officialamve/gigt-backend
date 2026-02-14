@@ -51,7 +51,6 @@ router.get("/:username", async (req, res) => {
 
 /* ================= EXPORT ================= */
 
-module.exports = router;
 
 router.put("/me/update", auth, async (req, res) => {
   try {
@@ -88,3 +87,39 @@ router.put("/me/update", auth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+/* ================= BECOME CREATOR ================= */
+
+router.post("/become-creator", auth, async (req, res) => {
+  try {
+    const { displayName, category, bio } = req.body;
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isCreator) {
+      return res.status(400).json({ message: "Already a creator" });
+    }
+
+    user.isCreator = true;
+    user.creatorProfile = {
+      displayName,
+      category,
+      bio,
+      verified: false
+    };
+
+    await user.save();
+
+    res.json({ message: "Creator profile created successfully" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+module.exports = router;
