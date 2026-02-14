@@ -7,7 +7,7 @@ exports.register = async (req, res) => {
   try {
     let { email, password, username } = req.body;
 
-    if (!email || !password) {
+    if (!email || !password || !username) {
       return res.status(400).json({ message: "Missing fields" });
     }
 
@@ -42,7 +42,6 @@ exports.register = async (req, res) => {
 
 /* ---------- LOGIN (EMAIL OR USERNAME) ---------- */
 exports.login = async (req, res) => {
-  // support both "identifier" and "email"
   const identifier = req.body.identifier || req.body.email;
   const { password } = req.body;
 
@@ -53,7 +52,7 @@ exports.login = async (req, res) => {
   try {
     const user = await User.findOne({
       $or: [{ email: identifier }, { username: identifier }]
-    });
+    }).select("+password"); // 🔥 FIX HERE
 
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
