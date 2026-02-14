@@ -19,7 +19,7 @@ const UserSchema = new mongoose.Schema({
   password: { 
     type: String, 
     required: true,
-    select: false   // 🔥 important security improvement
+    select: false
   },
 
   coins: { 
@@ -42,6 +42,11 @@ const UserSchema = new mongoose.Schema({
     category: { type: String },
     bio: { type: String },
     verified: { type: Boolean, default: false }
+  },
+
+  usernameChangedAt: {
+    type: Date,
+    default: null
   },
 
   createdAt: { 
