@@ -58,28 +58,50 @@ router.get("/:username", async (req, res) => {
 
 router.put("/me/update", auth, async (req, res) => {
   try {
-    const { displayName, category, bio } = req.body;
-
     const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (!user.isCreator) {
-      return res.status(403).json({ message: "Not a creator account" });
+    const now = new Date();
+    const sixtyDays = 60 * 24 * 60 * 60 * 1000;
+
+    /* ================= USERNAME UPDATE ================= */
+
+    if (req.body.username && req.body.username !== user.username) {
+
+      if (user.usernameChangedAt) {
+        const diff = now - user.usernameChangedAt;
+
+        if (diff < sixtyDays) {
+          const remainingDays = Math.ceil(
+            (sixtyDays - diff) / (1000 * 60 * 60 * 24)
+          );
+
+          return res.status(400).json({
+            message: `Username can be changed after ${remainingDays} days`
+          });
+        }
+      }
+
+      const existing = await User.findOne({ username: req.body.username });
+      if (existing) {
+        return res.status(400).json({ message: "Username already taken" });
+      }
+
+      user.username = req.body.username;
+      user.usernameChangedAt = now;
     }
 
-    if (displayName !== undefined) {
-      user.creatorProfile.displayName = displayName;
+    /* ================= CREATOR PROFILE ================= */
+
+    if (req.body.displayName !== undefined) {
+      user.creatorProfile.displayName = req.body.displayName;
     }
 
-    if (category !== undefined) {
-      user.creatorProfile.category = category;
-    }
-
-    if (bio !== undefined) {
-      user.creatorProfile.bio = bio;
+    if (req.body.bio !== undefined) {
+      user.creatorProfile.bio = req.body.bio;
     }
 
     await user.save();
