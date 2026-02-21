@@ -53,6 +53,24 @@ router.get("/:username", async (req, res) => {
   }
 });
 
+/* ================= SEARCH USERS ================= */
+
+router.get("/search/:query", async (req, res) => {
+  try {
+    const users = await User.find({
+      username: { $regex: req.params.query, $options: "i" }
+    })
+      .select("username isCreator")
+      .limit(10);
+
+    res.json(users);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Search failed" });
+  }
+});
+
 /* ================= EXPORT ================= */
 
 
@@ -144,6 +162,85 @@ router.post("/become-creator", auth, async (req, res) => {
 
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+/* ================= SPEND COINS ================= */
+
+router.post("/spend-coins", auth, async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.coins < amount) {
+      return res.status(400).json({ message: "Not enough coins" });
+    }
+
+    user.coins -= amount;
+    await user.save();
+
+    res.json({
+      message: "Coins deducted",
+      coins: user.coins
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+/* ================= ADD COINS ================= */
+
+router.post("/add-coins", auth, async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+
+    const user = await User.findById(req.user.id);
+
+    user.coins += amount;
+    await user.save();
+
+    res.json({
+      message: "Coins added",
+      coins: user.coins
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/spend-coins", auth, async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.coins < amount)
+      return res.status(400).json({ message: "Not enough coins" });
+
+    user.coins -= amount;
+    await user.save();
+
+    res.json({ coins: user.coins });
+
+  } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
 });
